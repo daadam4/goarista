@@ -47,8 +47,8 @@ func main() {
 	}
 	defer file.Close()
 
-	// Read the IP addresses from the CSV file
-	ipAddresses, err := readIPAddresses(file)
+	// Read the IP addresses and hostnames from the CSV file
+	ipAddresses, hostnames, err := readIPAddressesAndHostnames(file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,15 +61,15 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Concurrently connect to each IP address and execute show commands
-	for _, ipAddress := range ipAddresses {
+	for i, ipAddress := range ipAddresses {
 		wg.Add(1)
-		go func(ip string) {
+		go func(ip, hostname string) {
 			defer wg.Done()
 
 			// Connect to the Arista switch via SSH
 			connection, err := connectSSH(ip, username, password)
 			if err != nil {
-				log.Printf("Failed to connect to %s: %v", ip, err)
+				log.Printf("Failed to connect to %s (%s): %v", hostname, ip, err)
 				return
 				// We use return instead of continue to skip the rest of the Goroutine
 			}
@@ -78,29 +78,52 @@ func main() {
 			// Execute show commands
 			output, err := executeShowCommandsSSH(connection, showCommands)
 			if err != nil {
-				log.Printf("Failed to execute show commands on %s: %v", ip, err)
+				log.Printf("Failed to execute show commands on %s (%s): %v", hostname, ip, err)
 				return
 				// We use return instead of continue to skip the rest of the Goroutine
 			}
 
+			// Generate output filename using the hostname
+			outputFilePath := fmt.Sprintf("%s_output.txt", hostname)
+
 			// Write output to a file
-			outputFilePath := fmt.Sprintf("%s_output.txt", ip)
 			err = writeToFile(outputFilePath, output)
 			if err != nil {
-				log.Printf("Failed to write output to file for %s: %v", ip, err)
+				log.Printf("Failed to write output to file for %s (%s): %v", hostname, ip, err)
 				return
 				// We use return instead of continue to skip the rest of the Goroutine
 			}
 
 			fmt.Printf("Output written to %s\n", outputFilePath)
-		}(ipAddress)
+		}(ipAddress, hostnames[i])
 	}
 
 	// Wait for all Goroutines to finish
 	wg.Wait()
 }
 
-// Rest of the code...
+func readIPAddressesAndHostnames(reader io.Reader) ([]string, []string, error) {
+	ipAddresses := make([]string, 0)
+	hostnames := make([]string, 0)
+
+	csvReader := csv.NewReader(reader)
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if len(record) >= 2 {
+			ipAddresses = append(ipAddresses, strings.TrimSpace(record[1]))
+			hostnames = append(hostnames, strings.TrimSpace(record[0]))
+		}
+	}
+
+	return ipAddresses, hostnames, nil
+}
 
 func printBanner() {
 	banner := `
