@@ -16,12 +16,6 @@ import (
 	"golang.org/x/term"
 )
 
-var showCommands = []string{
-	"show version",
-	"show interfaces",
-	"show ip route",
-}
-
 func main() {
 	printBanner()
 
@@ -56,6 +50,27 @@ func main() {
 	// Get the SSH username and password from the user
 	username := prompt("Enter the SSH username: ")
 	password := promptPassword("Enter the SSH password: ")
+
+	// Get the show commands from the CSV file or use the default commands
+	showCommandsFilePath := prompt("Enter the path to the CSV file for show commands (or press Enter for default: show_commands.csv): ")
+	if showCommandsFilePath == "" {
+		showCommandsFilePath = "show_commands.csv"
+	}
+
+	// Look for the show commands CSV file in the current directory if not provided with a full path
+	if !filepath.IsAbs(showCommandsFilePath) {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		showCommandsFilePath = filepath.Join(currentDir, showCommandsFilePath)
+	}
+
+	// Read the show commands from the CSV file or use the default commands
+	showCommands, err := readShowCommands(showCommandsFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// WaitGroup to wait for all Goroutines to finish
 	var wg sync.WaitGroup
@@ -100,6 +115,29 @@ func main() {
 
 	// Wait for all Goroutines to finish
 	wg.Wait()
+}
+
+func readShowCommands(csvFilePath string) ([]string, error) {
+	// Open the CSV file
+	file, err := os.Open(csvFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Read the show commands from the CSV file
+	reader := csv.NewReader(file)
+	showCommands, err := reader.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	// Trim leading and trailing spaces from each command
+	for i := range showCommands {
+		showCommands[i] = strings.TrimSpace(showCommands[i])
+	}
+
+	return showCommands, nil
 }
 
 func readIPAddressesAndHostnames(reader io.Reader) ([]string, []string, error) {
