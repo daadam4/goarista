@@ -1,4 +1,4 @@
-# GoArista Script
+# GoArista
 
 This script is written in Go and allows you to connect to Arista switches, execute show commands, and save the output to files. The script takes input from a CSV file containing a list of IP addresses and hostnames for the switches.
 
