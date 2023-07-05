@@ -131,24 +131,32 @@ func main() {
 	wg.Wait()
 }
 
-func readShowCommands(csvFilePath string) ([]string, error) {
-	// Open the CSV file
-	file, err := os.Open(csvFilePath)
+func readShowCommands(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	// Read the show commands from the CSV file
 	reader := csv.NewReader(file)
-	showCommands, err := reader.Read()
-	if err != nil {
+
+	// Skip the header row
+	if _, err := reader.Read(); err != nil {
 		return nil, err
 	}
 
-	// Trim leading and trailing spaces from each command
-	for i := range showCommands {
-		showCommands[i] = strings.TrimSpace(showCommands[i])
+	var showCommands []string
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		showCommands = append(showCommands, record[0])
 	}
 
 	return showCommands, nil
@@ -164,13 +172,19 @@ func validateShowCommands(showCommands []string) bool {
 	return true
 }
 
-func readIPAddressesAndHostnames(reader io.Reader) ([]string, []string, error) {
-	ipAddresses := make([]string, 0)
-	hostnames := make([]string, 0)
+func readIPAddressesAndHostnames(file io.Reader) ([]string, []string, error) {
+	reader := csv.NewReader(file)
 
-	csvReader := csv.NewReader(reader)
+	// Skip the header row
+	if _, err := reader.Read(); err != nil {
+		return nil, nil, err
+	}
+
+	var ipAddresses []string
+	var hostnames []string
+
 	for {
-		record, err := csvReader.Read()
+		record, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
@@ -178,10 +192,8 @@ func readIPAddressesAndHostnames(reader io.Reader) ([]string, []string, error) {
 			return nil, nil, err
 		}
 
-		if len(record) >= 2 {
-			ipAddresses = append(ipAddresses, strings.TrimSpace(record[1]))
-			hostnames = append(hostnames, strings.TrimSpace(record[0]))
-		}
+		ipAddresses = append(ipAddresses, record[1])
+		hostnames = append(hostnames, record[0])
 	}
 
 	return ipAddresses, hostnames, nil
@@ -239,7 +251,7 @@ func executeShowCommandsSSH(connection *ssh.Client, commands []string) (string, 
 			return "", err
 		}
 
-		output.WriteString(fmt.Sprintf("Command: %s\n", command))
+		output.WriteString(fmt.Sprintf("Command: %s\n==========================================\n", command))
 		output.Write(out)
 		output.WriteString("\n")
 

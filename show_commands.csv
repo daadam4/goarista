@@ -1,1 +1,4 @@
-show version,show inventory,show interfaces status
+Commands
+show version
+show inventory
+show interfaces status
