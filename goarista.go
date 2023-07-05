@@ -73,6 +73,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Validate show commands
+	if !validateShowCommands(showCommands) {
+		log.Fatal("One or more show commands do not contain the word 'show'. Please check the commands.")
+	}
+
 	// Create a timestamped folder in the current directory
 	timestamp := time.Now().Format("06_01_02_150405")
 	outputDir := filepath.Join(".", timestamp)
@@ -147,6 +152,16 @@ func readShowCommands(csvFilePath string) ([]string, error) {
 	}
 
 	return showCommands, nil
+}
+
+// ValidateShowCommands checks if all show commands contain the word "show"
+func validateShowCommands(showCommands []string) bool {
+	for _, command := range showCommands {
+		if !strings.Contains(command, "show") {
+			return false
+		}
+	}
+	return true
 }
 
 func readIPAddressesAndHostnames(reader io.Reader) ([]string, []string, error) {
