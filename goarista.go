@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -98,8 +99,9 @@ func main() {
 				// We use return instead of continue to skip the rest of the Goroutine
 			}
 
-			// Generate output filename using the hostname
-			outputFilePath := fmt.Sprintf("%s_output.txt", hostname)
+			// Generate output filename using the hostname and timestamp
+			timestamp := time.Now().Format("20060102150405") // Format: YYYYMMDDHHMMSS
+			outputFilePath := fmt.Sprintf("%s_%s_output.txt", hostname, timestamp)
 
 			// Write output to a file
 			err = writeToFile(outputFilePath, output)
