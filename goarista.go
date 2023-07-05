@@ -73,6 +73,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Create a timestamped folder in the current directory
+	timestamp := time.Now().Format("06_01_02_150405")
+	outputDir := filepath.Join(".", timestamp)
+	err = os.Mkdir(outputDir, 0755)
+	if err != nil {
+		log.Fatalf("Failed to create output directory: %v", err)
+	}
+
 	// WaitGroup to wait for all Goroutines to finish
 	var wg sync.WaitGroup
 
@@ -100,8 +108,7 @@ func main() {
 			}
 
 			// Generate output filename using the hostname and timestamp
-			timestamp := time.Now().Format("20060102150405") // Format: YYYYMMDDHHMMSS
-			outputFilePath := fmt.Sprintf("%s_%s_output.txt", hostname, timestamp)
+			outputFilePath := filepath.Join(outputDir, fmt.Sprintf("%s_output.txt", hostname))
 
 			// Write output to a file
 			err = writeToFile(outputFilePath, output)
