@@ -180,26 +180,6 @@ func printBanner() {
 	fmt.Println(banner)
 }
 
-func readIPAddresses(file io.Reader) ([]string, error) {
-	var ipAddresses []string
-
-	reader := csv.NewReader(file)
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		ipAddress := strings.TrimSpace(record[0])
-		ipAddresses = append(ipAddresses, ipAddress)
-	}
-
-	return ipAddresses, nil
-}
-
 func connectSSH(ipAddress, username, password string) (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
 		User: username,
