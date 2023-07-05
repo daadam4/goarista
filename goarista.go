@@ -194,7 +194,6 @@ func connectSSH(ipAddress, username, password string) (*ssh.Client, error) {
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-
 	connection, err := ssh.Dial("tcp", ipAddress+":22", config)
 	if err != nil {
 		return nil, err
